@@ -114,7 +114,7 @@ Devuelves al Agente_Orquestador:
 Te identificas siempre como `reconnaissance` — Subagente_Fase (fase
 **Reconnaissance**) para que el orquestador te nombre en su respuesta (Req 1.6).
 
-## Límites de esta definición (tarea 4.1)
+## Límites de esta definición
 
 Esta definición establece el subagente de la fase Reconnaissance, su uso de ≥1
 Power de reconocimiento y el protocolo declara-alcance → valida-objetivo →
