@@ -8,7 +8,7 @@ Cinco custom agents, uno por fase del ciclo EC-Council. Cada subagente **declara
 | Scanning | `footprinting-enumeration`, `vulnerability-assessment` |
 | Gaining Access | `vulnerability-assessment`, `exploitation-metasploit` |
 | Maintaining Access | `exploitation-metasploit` |
-| Covering Tracks | _hueco de cobertura_: Power nuevo (análisis/manipulación de rastros acotado al lab) |
+| Covering Tracks | _fuera de alcance del engagement_ (solo análisis de logs de referencia) |
 
 **Ruta compartida** mantenida por el Líder Técnico (línea base docente, Task 4).
 
