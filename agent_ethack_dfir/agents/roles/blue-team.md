@@ -4,14 +4,16 @@ description: >-
   Subagente_Rol de Blue Team para el Agente de Ethical Hacking y Digital
   Forensics de La Salle. Agrupa los Powers defensivos del equipo para detección,
   análisis de logs y hardening del Entorno_Laboratorio, identificando la
-  actividad ofensiva que el Red Team registra. ESQUELETO: Blue Team es un HUECO
-  de cobertura — no existe un Power base dedicado de detección/hardening; sus
-  Powers los crean los 3 alumnos del equipo en la tarea 7.2, pudiendo apoyarse en
-  los logs producidos por dfir-linux y en network-forensics como insumo de datos.
+  actividad ofensiva que el Red Team registra. La línea base del docente siembra
+  el primer Power defensivo, cloudwatch-detection (detección de scanning/fuerza
+  bruta/webshell leyendo el log de DVWA en CloudWatch desde Kali con AWS CLI); los
+  el equipo puede añadir Powers adicionales, apoyándose además en los logs
+  producidos por dfir-linux y en network-forensics como insumo de datos.
 kind: role
 team: blue-team
 engagement: dvwa-lab-ulsa
-powers: []  # HUECO de cobertura: sin Power base dedicado; se crean en la tarea 7.2 (alumnos)
+powers:
+  - cloudwatch-detection   # Power base (docente): detección con CloudWatch Logs; los alumnos añaden más en 7.2
 powers_base_apoyo:
   - dfir-linux          # insumo: logs de host Linux producidos durante el engagement
   - network-forensics   # insumo: captura/forense de red como fuente de datos
@@ -35,18 +37,20 @@ Allowlist_Objetivos (`engagements/dvwa-lab-ulsa/scope.yaml`); el host EC2
 anfitrión queda fuera de alcance salvo autorización explícita con
 `host_is_target: true`.
 
-## ⚠️ Nota de hueco de cobertura (esqueleto)
+## Powers del Blue Team
 
-Blue Team es uno de los **huecos de cobertura** que la línea base del docente
-deja deliberadamente abiertos. **No existe un Power base dedicado** de
-detección/hardening (a diferencia de Red Team, Digital Forensics, GRC o Incident
-Responder, que sí reutilizan Powers base ya construidos). Por eso este subagente
-se entrega como **esqueleto**:
+El Blue Team cuenta con un Power base dedicado, **`cloudwatch-detection`**
+(`kind: defensive`, `track: BlueTeam`). El equipo puede extender la familia con
+Powers adicionales:
 
-- El campo `powers` está **vacío** a propósito. Los **3 alumnos del Blue Team**
-  crean sus Powers desde cero en la **tarea 7.2** (mínimo **2 Powers con
-  Herramienta_Real por alumno** — Req 4.2, 9.6) y los cablean a
-  `powers/blue-team/`.
+- **`cloudwatch-detection`** (Power base, docente) — detección de scanning web,
+  fuerza bruta y webshell leyendo el log de DVWA en CloudWatch (`/ethack-lab/dvwa`)
+  desde Kali con AWS CLI y un perfil de solo-lectura `blue-team`. Herramientas
+  reales: `aws-cli`, CloudWatch Logs y Logs Insights. Steering:
+  `deteccion-scanning-cloudwatch`.
+- El equipo Blue Team puede añadir Powers adicionales dentro de
+  `powers/blue-team/` (p. ej. WAF ModSecurity+CRS, Fail2ban, NIDS Suricata,
+  hardening Lynis/Docker Bench).
 - Para construir esos Powers, el equipo puede **apoyarse en insumos de datos ya
   existentes**, sin recrearlos:
   - **`dfir-linux`** — los **logs de host Linux** producidos durante el
@@ -57,8 +61,7 @@ se entrega como **esqueleto**:
   equipo los consume, pero sus entregables propios son los Powers nuevos de
   detección/análisis de logs/hardening.
 
-Cuando los alumnos completen la tarea 7.2, este frontmatter debe actualizarse
-poblando `powers` con los Powers entregados y el Catalogador
+Al añadir Powers al equipo, actualiza `powers` en este frontmatter; el Catalogador
 (`scripts/catalog.py`) los registrará en `inventory.json`.
 
 ## Rol y responsabilidades (Req 4.1)
@@ -88,7 +91,7 @@ el hallazgo sea trazable hasta el registro o log que lo originó.
   evidencia (Flujo_Investigacion Detect → Isolate → Collect → Preserve → Analyze
   → Report).
 
-## Contrato de los Powers del equipo (a cumplir en la tarea 7.2)
+## Contrato de los Powers del equipo
 
 Cada Power que creen los alumnos debe cumplir el modelo estándar de Power:
 
