@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Fuerza bruta ofensiva contra DVWA — Apunte de laboratorio autorizado</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body {
+    font-family: "DejaVu Sans", Arial, sans-serif;
+    color: #1a1a1a;
+    line-height: 1.45;
+    font-size: 11.5pt;
+  }
+  h1 {
+    font-size: 20pt;
+    border-bottom: 3px solid #7a1f1f;
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: #555;
+    font-size: 11pt;
+    margin-top: 0;
+    margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #7a1f1f;
+    border-left: 5px solid #7a1f1f;
+    padding-left: 8px;
+    margin-top: 26px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12.5pt;
+    color: #333;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p { margin: 6px 0; }
+  code {
+    background: #f1f1f1;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 10.5pt;
+  }
+  pre {
+    background: #1e1e1e;
+    color: #d8d8d8;
+    padding: 10px 12px;
+    border-radius: 5px;
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 9.8pt;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    page-break-inside: avoid;
+  }
+  pre .com { color: #7fbf7f; }
+  .box {
+    border: 1px solid #c9c9c9;
+    border-left: 5px solid #7a1f1f;
+    background: #fbf7f0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+    page-break-inside: avoid;
+  }
+  .box.warn {
+    border-left-color: #b8860b;
+    background: #fff8e6;
+  }
+  .box.scope {
+    border-left-color: #1f5f1f;
+    background: #f0f8f0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0 16px 0;
+    font-size: 10.3pt;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #7a1f1f;
+    color: #fff;
+  }
+  tr:nth-child(even) td { background: #f7f7f7; }
+  ul, ol { margin: 6px 0 6px 20px; }
+  li { margin: 3px 0; }
+  .tag {
+    display: inline-block;
+    background: #7a1f1f;
+    color: #fff;
+    font-size: 9pt;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-right: 6px;
+  }
+  footer {
+    margin-top: 30px;
+    font-size: 9pt;
+    color: #888;
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Fuerza bruta ofensiva contra un login web</h1>
+<p class="subtitle">Apunte de laboratorio autorizado — práctica con DVWA (Damn Vulnerable Web Application) · Power <code>fuerza-bruta-login</code></p>
+
+<div class="box scope">
+  <strong>Alcance y autorización.</strong> Este apunte asume un laboratorio
+  propio o explícitamente autorizado (p. ej. DVWA desplegado localmente o en
+  un engagement con <code>scope.yaml</code> firmado). Todo comando de este
+  documento se ejecuta solo contra objetivos declarados en la
+  Allowlist_Objetivos del engagement. No usar estas técnicas contra ningún
+  sistema sin autorización explícita por escrito.
+</div>
+
+<h2>1. Tipos de ataque de fuerza bruta</h2>
+<p>
+  Antes de atacar, hay que decidir qué variante de fuerza bruta aplica al
+  objetivo. Las tres relevantes para un login web como el de DVWA:
+</p>
+
+<table>
+  <tr><th>Tipo</th><th>Qué hace</th><th>Cuándo usarla</th></tr>
+  <tr>
+    <td><span class="tag">Diccionario</span></td>
+    <td>Prueba contraseñas comunes o por defecto (<code>admin</code>,
+      <code>123456</code>, <code>password</code>) contra una o pocas
+      cuentas conocidas.</td>
+    <td>Cuando se sospecha que la cuenta nunca cambió su contraseña de
+      fábrica, o usa una contraseña débil típica. Es el punto de partida
+      recomendado en DVWA, donde la cuenta <code>admin</code> suele tener
+      contraseña por defecto <code>password</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="tag">Credential stuffing</span></td>
+    <td>Usa pares usuario+contraseña ya filtrados de otro sitio, apostando
+      a que la persona los reutiliza.</td>
+    <td>Cuando se cuenta con una lista de credenciales filtradas legítimas
+      (de un laboratorio de concientización, por ejemplo) y se quiere
+      probar reutilización de contraseñas. Requiere que esas credenciales
+      correspondan al mismo propietario del objetivo.</td>
+  </tr>
+  <tr>
+    <td><span class="tag">Password spraying</span></td>
+    <td>Prueba una misma contraseña común contra muchas cuentas distintas,
+      para no disparar bloqueos por intentos repetidos en una sola cuenta.</td>
+    <td>Cuando hay varias cuentas de usuario conocidas (por enumeración
+      previa) y se sospecha una política de contraseña débil compartida,
+      en vez de atacar una sola cuenta con muchos intentos.</td>
+  </tr>
+</table>
+
+<p>
+  Para esta práctica contra DVWA se usa <strong>ataque de diccionario</strong>:
+  es el escenario más realista para un panel de login recién desplegado con
+  credenciales de fábrica sin cambiar, y es el que menos ruido genera.
+</p>
+
+<h2>2. Armado del diccionario</h2>
+<p>
+  El diccionario se separa en dos listas: usuarios y contraseñas. Para
+  DVWA, el usuario <code>admin</code> es conocido de antemano (no hace
+  falta enumerarlo), así que el diccionario se concentra en contraseñas
+  comunes y de fábrica.
+</p>
+
+<pre><span class="com"># Lista de usuarios (DVWA expone "admin" por defecto)</span>
+cat &gt; users.txt &lt;&lt;EOF
+admin
+EOF
+
+<span class="com"># Lista de contraseñas: fábrica/comunes primero</span>
+cat &gt; passwords.txt &lt;&lt;EOF
+password
+admin
+123456
+letmein
+dvwa
+EOF</pre>
+
+<p>
+  Si el entorno tiene SecLists instalado, es preferible partir de una lista
+  curada de credenciales por defecto en vez de escribirla a mano:
+</p>
+
+<pre><span class="com"># Verificar si existe la lista de credenciales por defecto de SecLists</span>
+ls /usr/share/seclists/Passwords/Default-Credentials/ 2>/dev/null</pre>
+
+<div class="box">
+  <strong>Regla de priorización.</strong> Empezar siempre por contraseñas de
+  fábrica y comunes (ataque de diccionario) antes de escalar a listas más
+  grandes. Un diccionario de 5–20 entradas suele bastar para confirmar si
+  la falla "contraseña de fábrica" existe en DVWA; no hay necesidad de
+  arrancar con una lista de miles de palabras.
+</div>
+
+<h2>3. Comando de Hydra contra el login (<code>http-post-form</code>)</h2>
+<p>
+  El formulario de login de DVWA envía un <code>POST</code> a
+  <code>/login.php</code> con los campos <code>username</code>,
+  <code>password</code> y un botón <code>Login</code>. Antes de lanzar
+  Hydra, hay que confirmar el texto que distingue un intento fallido (por
+  ejemplo, DVWA responde <code>"Login failed"</code> en la página cuando la
+  credencial es incorrecta).
+</p>
+
+<pre><span class="com"># Sintaxis general del módulo http-post-form:</span>
+<span class="com">#   hydra -L &lt;usuarios&gt; -P &lt;contraseñas&gt; &lt;host&gt; http-post-form \</span>
+<span class="com">#     "&lt;ruta&gt;:&lt;campo_user&gt;=^USER^&amp;&lt;campo_pass&gt;=^PASS^&amp;Login=Login:&lt;cadena_de_fallo&gt;"</span>
+
+hydra -L users.txt -P passwords.txt 127.0.0.1 http-post-form \
+  "/dvwa/login.php:username=^USER^&amp;password=^PASS^&amp;Login=Login:F=Login failed" \
+  -t 4</pre>
+
+<p>
+  Notas sobre la sintaxis:
+</p>
+<ul>
+  <li><code>-L</code>/<code>-P</code>: listas de usuarios y contraseñas
+    (<code>-l</code>/<code>-p</code> para un valor único).</li>
+  <li><code>^USER^</code> / <code>^PASS^</code>: marcadores que Hydra
+    sustituye por cada combinación probada.</li>
+  <li><code>F=Login failed</code>: cadena que aparece cuando el intento
+    <strong>falla</strong>. Alternativamente, <code>S=...</code> marca una
+    cadena que aparece solo cuando el intento <strong>tiene éxito</strong>
+    (por ejemplo, un fragmento del encabezado del panel autenticado).</li>
+  <li><code>-t 4</code>: 4 tareas en paralelo — ver sección 5 sobre límites
+    anti-DoS antes de subir este número.</li>
+</ul>
+
+<div class="box warn">
+  <strong>Cookie de sesión de DVWA.</strong> DVWA suele requerir una cookie
+  de sesión PHP válida (<code>PHPSESSID</code>) presente antes de aceptar
+  el POST de login, y a veces un token CSRF (<code>user_token</code>) que
+  cambia en cada carga del formulario. Si Hydra no obtiene éxito con ningún
+  intento, verificar primero si el formulario exige ese token — en ese
+  caso, Hydra necesita el parámetro adicional o un script auxiliar que
+  renueve el token antes de cada intento.
+</div>
+
+<h2>4. Cómo se ve un intento exitoso</h2>
+<p>
+  Cuando Hydra encuentra una combinación válida, la imprime en su salida
+  estándar con el formato siguiente:
+</p>
+
+<pre>[DATA] max 4 tasks per 1 server, overall 4 tasks, 5 login tries (l:1/p:5), ~2 tries per task
+[DATA] attacking http-post-form://127.0.0.1:80/dvwa/login.php:username=^USER^&amp;password=^PASS^&amp;Login=Login:F=Login failed
+[80][http-post-form] host: 127.0.0.1   login: admin   password: password
+1 of 1 target successfully completed, 1 valid password found
+Hydra finished at 2026-11-24 10:09:47</pre>
+
+<p>
+  La línea clave es <code>[80][http-post-form] host: ... login: ...
+  password: ...</code>: ahí aparece el par usuario/contraseña válido. Para
+  documentar el hallazgo con el mismo vocabulario que usaría un analista de
+  Blue Team leyendo un log de autenticación, este resultado se traduce al
+  patrón de intentos fallidos seguidos de uno exitoso:
+</p>
+
+<pre>10:02:11 FAILED login user=admin from 127.0.0.1
+10:02:12 FAILED login user=admin from 127.0.0.1
+10:02:12 FAILED login user=admin from 127.0.0.1
+...
+10:09:47 SUCCESS login user=admin from 127.0.0.1   (password=password)</pre>
+
+<h2>5. Límites anti-DoS (acotado, con pausas)</h2>
+<p>
+  El objetivo de esta práctica es confirmar la existencia de la falla
+  (contraseña de fábrica sin límite de intentos), no saturar el servidor
+  de DVWA ni generar una denegación de servicio. Reglas prácticas:
+</p>
+
+<table>
+  <tr><th>Parámetro</th><th>Qué controla</th><th>Valor recomendado en laboratorio</th></tr>
+  <tr>
+    <td><code>-t</code></td>
+    <td>Número de tareas/hilos en paralelo.</td>
+    <td>2–4 para una prueba acotada contra un solo objetivo local.</td>
+  </tr>
+  <tr>
+    <td><code>-w</code></td>
+    <td>Tiempo de espera (segundos) por respuesta antes de reintentar.</td>
+    <td>20–30, para dar pausas entre intentos y no saturar el servidor.</td>
+  </tr>
+  <tr>
+    <td>Tamaño del diccionario</td>
+    <td>Cuántas combinaciones se prueban en total.</td>
+    <td>Acotado (5–20 contraseñas) mientras se confirma el ataque de
+      diccionario; no usar listas de miles de entradas en esta fase.</td>
+  </tr>
+</table>
+
+<pre><span class="com"># Comando acotado, con pausas, para un laboratorio local (recomendado):</span>
+hydra -L users.txt -P passwords.txt 127.0.0.1 http-post-form \
+  "/dvwa/login.php:username=^USER^&amp;password=^PASS^&amp;Login=Login:F=Login failed" \
+  -t 4 -w 30</pre>
+
+<div class="box warn">
+  <strong>Señal de detener la prueba.</strong> Si el servidor de DVWA
+  empieza a responder con latencia creciente, errores 5xx, o deja de
+  responder, detener la ejecución de inmediato. Esa reacción es evidencia
+  de que la prueba está afectando la disponibilidad del servicio, lo cual
+  excede el objetivo de "confirmar la falla" y se convierte en una
+  denegación de servicio no buscada, incluso en un laboratorio propio.
+</div>
+
+<h2>6. Resumen del flujo</h2>
+<ol>
+  <li>Confirmar que el objetivo (DVWA) está en el alcance autorizado.</li>
+  <li>Elegir el tipo de ataque: diccionario, para credenciales de fábrica.</li>
+  <li>Armar <code>users.txt</code> y <code>passwords.txt</code> acotados.</li>
+  <li>Identificar la cadena de fallo/éxito del formulario de login.</li>
+  <li>Ejecutar Hydra con <code>http-post-form</code>, concurrencia baja y
+    pausas (<code>-t 4 -w 30</code>).</li>
+  <li>Leer la línea <code>[80][http-post-form] ... login: ... password:
+    ...</code> de la salida y documentar el hallazgo como par
+    <code>FAILED</code>×N → <code>SUCCESS</code>.</li>
+  <li>Detener la prueba ante cualquier señal de degradación del servicio.</li>
+</ol>
+
+<footer>
+  Apunte generado para el laboratorio autorizado DVWA — Power
+  <code>fuerza-bruta-login</code> (Gaining Access, Red Team). Uso exclusivo
+  en entornos propios o explícitamente autorizados.
+</footer>
+
+</body>
+</html>
