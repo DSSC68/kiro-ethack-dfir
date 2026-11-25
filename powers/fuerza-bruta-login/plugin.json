@@ -1,0 +1,35 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "fuerza-bruta-login",
+  "version": "0.1.0",
+  "description": "Power de fuerza bruta contra formularios/paneles de login (Gaining Access). Envuelve Hydra para probar credenciales contra un servicio de autenticación dentro del alcance autorizado del engagement, siguiendo la metodología y las reglas destiladas del apunte 'Fuerza bruta y sitio web comprometido'.",
+  "author": { "name": "Diego Salinas — ULSA" },
+  "keywords": ["ethical-hacking", "brute-force", "hydra", "gaining-access", "x-ethack"],
+
+  "x-ethack": {
+    "kind": "offensive",
+    "ecCouncilPhase": "Gaining Access",
+    "forensicsStage": null,
+    "team": "red-team",
+    "owner": "diego-salinas",
+    "tools": [
+      { "name": "Hydra", "binary": "hydra", "category": "pentest" }
+    ],
+    "allowlistValidation": {
+      "required": true,
+      "source": "engagements/${ENGAGEMENT_ID}/scope.yaml#assets",
+      "targetParams": ["target", "host", "hostname", "domain", "url"]
+    },
+    "producesActionLog": true,
+
+    "executionMode": {
+      "param": "Modo_Ejecucion",
+      "allowed": ["script-kiddie", "green-hat", "pro"],
+      "default": "script-kiddie"
+    },
+    "documentation": {
+      "root": "powers/${TEAM}/${POWER}/docs",
+      "required": ["prompt.md", "sessions/", "feedback.md"]
+    }
+  }
+}

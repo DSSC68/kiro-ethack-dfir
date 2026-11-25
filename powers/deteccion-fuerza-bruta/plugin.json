@@ -1,0 +1,37 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "deteccion-fuerza-bruta",
+  "version": "0.1.0",
+  "description": "Power de detección (Blue Team) de ataques de fuerza bruta contra formularios/paneles de login. Analiza capturas tcpdump y logs de autenticación para identificar el patrón FAILED...SUCCESS desde una misma IP, distinguirlo de otras fallas de red (DNS caído, SYN flood) y verificar las medidas de prevención/hardening, siguiendo la metodología destilada del apunte 'Fuerza bruta y sitio web comprometido'.",
+  "author": { "name": "Diego Salinas — ULSA" },
+  "keywords": ["ethical-hacking", "blue-team", "brute-force-detection", "tcpdump", "log-analysis", "x-ethack"],
+
+  "x-ethack": {
+    "kind": "defensive",
+    "ecCouncilPhase": null,
+    "forensicsStage": "Detect",
+    "team": "blue-team",
+    "owner": "diego-salinas",
+    "tools": [
+      { "name": "tcpdump", "binary": "tcpdump", "category": "network-analysis" },
+      { "name": "grep", "binary": "grep", "category": "log-analysis" },
+      { "name": "awk", "binary": "awk", "category": "log-analysis" }
+    ],
+    "allowlistValidation": {
+      "required": true,
+      "source": "engagements/${ENGAGEMENT_ID}/scope.yaml#assets",
+      "targetParams": ["target", "host", "hostname", "domain", "url"]
+    },
+    "producesActionLog": true,
+
+    "executionMode": {
+      "param": "Modo_Ejecucion",
+      "allowed": ["script-kiddie", "green-hat", "pro"],
+      "default": "script-kiddie"
+    },
+    "documentation": {
+      "root": "powers/${TEAM}/${POWER}/docs",
+      "required": ["prompt.md", "sessions/", "feedback.md"]
+    }
+  }
+}
